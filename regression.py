@@ -1,7 +1,27 @@
 # Code for linear regression
 import csv
-#from sklearn import linear_model
-#reg = linear_model.LinearRegression()
+import numpy
+from sklearn import linear_model
+
+def dotProduct(vec1, vec2):
+	result = 1
+	for index, val in enumerate(vec1):
+		result += val * vec2[index]
+	return result
+
+
+def featureExtractor(dataPoint, features, featuresIndex):
+	currencyToFloat = lambda currStr: float(currStr.strip('$').replace(',', ''))
+	featureVec = []
+	for index, feat in enumerate(features):
+		yVal = listing[featuresIndex[index]]
+		if feat == 'security_deposit' or feat == 'cleaning_fee' and yVal != "":
+			yVal = yVal[1:]
+		yVal = yVal.replace(',', '')
+		if yVal == "":
+			yVal = 0
+		featureVec.append( int(float(yVal)))
+	return featureVec
 
 
 with open('./data/nyc-listings.csv', 'rb') as csvfile:
@@ -11,39 +31,39 @@ with open('./data/nyc-listings.csv', 'rb') as csvfile:
 	features = ['accommodates', 'bathrooms', 'bedrooms', 'beds', 'guests_included', 'security_deposit', 'cleaning_fee']
 	featuresIndex = [headers.index(feat) for feat in features]
 
-	data = data[1:]
-	numListings = len(data)
-	currencyToFloat = lambda currStr: float(currStr.strip('$').replace(',', ''))
+	testData = data[1:1001]
+	learningData = data[1001:]
 	featureVectors = []
+	yValueVector = []
+	yValueIndex = headers.index('price')
+	currencyToFloat = lambda currStr: float(currStr.strip('$').replace(',', ''))
 
-	for listing in data:
-		featureVec = []
-		for index, feat in enumerate(features):
-			yVal = listing[featuresIndex[index]]
-			if feat == 'security_deposit' or feat == 'cleaning_fee' and yVal != "":
-				yVal = yVal[1:]
-			if yVal == "":
-				yVal = 0
-			featureVec.append( (feat, yVal) )
+
+	for listing in learningData:
+		featureVec = featureExtractor(listing, features, featuresIndex)
 		featureVectors.append(featureVec)
+		yValueVector.append( currencyToFloat(listing[yValueIndex]) )
 
-	print("First data entry: ")
-	for index, feat in enumerate(featureVectors[0]):
-		print str(feat)
+	lm = linear_model.LinearRegression()
+	lm.fit(featureVectors, yValueVector)
+	
+	#Testing
+	diffs = []
+	NUM_OF_PRINTED_SAMPLES = 10
 
-#guests, bathrooms, bedrooms, beds, square feet, 
+	print "%s test samples printed out of %s \n" % (NUM_OF_PRINTED_SAMPLES, len(testData))
+	for index, listing in enumerate(testData):
+		
+		featureVec = featureExtractor(listing, features, featuresIndex)
+		estimatedPrice = dotProduct(featureVec, lm.coef_)
+		actualPrice = listing[yValueIndex]
+		diff = abs(estimatedPrice - currencyToFloat(actualPrice))
+		diffs.append(diff)
 
-'''
-accomodates: BB
-bathrooms: bc
-bedrooms: bd
-beds: be
-security deposit: bl
-cleaning fee: bm
-number of reviews: by
+		if index < NUM_OF_PRINTED_SAMPLES:
+			print "Feature vector: %s" % featureVec
+			estimatedPriceString = "$" + str(round(estimatedPrice, 2))
+			print "Estimated Price: %s" % estimatedPriceString
+			print "Actual Price: %s \n" % actualPrice
 
-
-
-future
-avilabilite
-'''
+	print "Average differential: %s" % "$" + str(round(numpy.mean(diffs), 2))
