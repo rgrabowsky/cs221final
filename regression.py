@@ -30,7 +30,8 @@ with open('./data/nyc-listings.csv', 'rb') as csvfile:
 	headers = data[0]
 	features = ['accommodates', 'bathrooms', 'bedrooms', 'beds', 'guests_included', 'security_deposit', 'cleaning_fee']
 	featuresIndex = [headers.index(feat) for feat in features]
-
+	
+	# Randomize order of rows in data before doing this
 	testData = data[1:1001]
 	learningData = data[1001:]
 	featureVectors = []
